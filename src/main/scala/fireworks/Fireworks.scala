@@ -34,7 +34,11 @@ object Firework:
    * “literal patterns” to match on case objects.
    */
   def next(firework: Firework): Firework =
-    ???
+    firework match
+      case Done => Done
+      case waiting: Waiting => waiting.next
+      case launched: Launched => launched.next
+      case exploding: Exploding => exploding.next
 
 end Firework
 
@@ -58,10 +62,11 @@ case class Waiting(countDown: Int, startPosition: Point, numberOfParticles: Int,
    *
    * Hint: use the [[Launched.init]] operation to transition the firework to the [[Launched]] state.
    */
+
   def next: Firework =
     if countDown > 0 then
       copy(countDown = countDown - 1)
-    else ???
+    else Launched.init(position = startPosition, numberOfParticles = numberOfParticles, particlesColor = particlesColor)
 
 end Waiting
 
@@ -109,7 +114,10 @@ case class Launched(countDown: Int, position: Point, direction: Angle, numberOfP
    *         and use the constant [[Settings.propulsionSpeed]] for the speed of the firework.
    */
   def next: Firework =
-    ???
+    if countDown > 0 then
+      copy(countDown - 1, Motion.movePoint(position, direction, Settings.propulsionSpeed), direction, numberOfParticles, particlesColor)
+    else
+      Exploding.init(numberOfParticles = numberOfParticles, direction, position, particlesColor)
 
 end Launched
 
@@ -147,7 +155,9 @@ case class Exploding(countDown: Int, particles: Particles) extends Firework:
    *       of this firework.
    */
   def next: Firework =
-    ???
+    if countDown > 0 then
+      copy(countDown - 1, particles.next)
+    else Done
 
 end Exploding
 
@@ -190,26 +200,13 @@ case class Particle(horizontalSpeed: Double, verticalSpeed: Double, position: Po
    *         and the constant [[Settings.gravity]] to simulate the gravity.
    */
   def next: Particle =
-    // Horizontal speed is only subject to air friction, its next value
-    // should be the current value reduced by air friction
-    // Hint: use the operation `Motion.drag`
-    val updatedHorizontalSpeed: Double =
-      ???
-    // Vertical speed is subject to both air friction and gravity, its next
-    // value should be the current value minus the gravity, then reduced by
-    // air friction
-    val updatedVerticalSpeed: Double =
-      ???
-    // Particle position is updated according to its new speed
-    val updatedPosition = Point(position.x + updatedHorizontalSpeed, position.y + updatedVerticalSpeed)
-    // Construct a new particle with the updated position and speed
-    ???
+    val updatedHorizontalSpeed: Double = Motion.drag(horizontalSpeed)
+    val updatedVerticalSpeed: Double = Motion.drag(verticalSpeed - Settings.gravity)
+    val updatedPosition = Point(position.x + horizontalSpeed, position.y + verticalSpeed)
+
+    Particle(updatedHorizontalSpeed, updatedVerticalSpeed, updatedPosition, color)
 
 end Particle
-
-// --- Assignment ends here! Once you have reached this point you
-// --- can run your program (invoke the `run` sbt task) and enjoy
-// --- the show! … or fix your implementation, if necessary…
 
 /**
  * A group of particles constituting an explosion
